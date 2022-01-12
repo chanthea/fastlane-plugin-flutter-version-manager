@@ -42,7 +42,7 @@ module Fastlane
         "
         -h: Access this menu
         -version: Reads current version name
-        -code: Reads current version code
+        -code: Bumps current version
         -major: Bumps major version
         -minor: Bumps minor version
         -patch: Bumps patch version
@@ -125,7 +125,7 @@ module Fastlane
       end
   
       def get_current_version_code
-        @git_reader.get_timestamp - GIT_OFFSET
+        "(#{@version_reader.field('code')})"
       end
   
       def bump_major
@@ -152,6 +152,13 @@ module Fastlane
         update_pubspec
       end
       
+      def bump_code
+        context = @version_reader.all
+        context['code'] = context['code'] + 1
+        @version_writter.write(context)
+        update_pubspec
+      end
+
       def update_pubspec
         previousVersion = @pubspec_yaml_reader.field('version')
         newVersion = "#{get_current_version_name}+#{get_current_version_code}"
@@ -175,15 +182,17 @@ module Fastlane
         versionManager = VersionManager.new(version_path, pubspec_path, git_path)
 
         # Check if the user has passed additional arguments
-        if(args.include?("-h") || args.include?("-version") || args.include?("-code") || args.include?("-major") || args.include?("-minor") || args.include?("-patch") || args.include?("-apply"))
+        if(args.include?("-h") || args.include?("-version") || args.include?("-code") || args.include?("-major") || args.include?("-minor") || args.include?("-patch") || args.include?("-apply") || args.include?("-build"))
           args.each { |a|
             case a
             when '-h'
               UI.message(ARGUMENT_MANAGER.commands)
             when "-version"
               UI.message(versionManager.get_current_version_name)
-            when "-code"
+            when "-build"
               UI.message(versionManager.get_current_version_code)
+            when "-code"
+              versionManager.bump_code
             when "-major"
               versionManager.bump_major
             when "-minor"
