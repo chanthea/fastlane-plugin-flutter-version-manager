@@ -25,6 +25,8 @@ module Fastlane
           true
         when "-apply"
           true
+        when "-build"
+          true
         else
           false
         end
@@ -42,11 +44,12 @@ module Fastlane
         "
         -h: Access this menu
         -version: Reads current version name
-        -code: Bumps current version
+        -code: Bumps build number
         -major: Bumps major version
         -minor: Bumps minor version
         -patch: Bumps patch version
         -apply: Applies version specified from version.yml to pubspec
+        -build: read build number
         "
       end
     end
@@ -152,9 +155,10 @@ module Fastlane
         update_pubspec
       end
       
-      def bump_code
+      def bump_code(value)
+        build = value || context['code'] + 1
         context = @version_reader.all
-        context['code'] = context['code'] + 1
+        context['code'] = build
         @version_writter.write(context)
         update_pubspec
       end
@@ -177,6 +181,7 @@ module Fastlane
         pubspec_path = params[:pubspec]
         git_path = params[:git_repo] || './'
         args = (params[:arguments] || "").split(" ")
+        build_number_value = params[:build_number_value] || nil
 
         # Paths valid, continue
         versionManager = VersionManager.new(version_path, pubspec_path, git_path)
@@ -192,7 +197,7 @@ module Fastlane
             when "-build"
               UI.message(versionManager.get_current_version_code)
             when "-code"
-              versionManager.bump_code
+              versionManager.bump_code(build_number_value)
             when "-major"
               versionManager.bump_major
             when "-minor"
@@ -229,6 +234,11 @@ module Fastlane
           FastlaneCore::ConfigItem.new(
             key: :arguments,
             description: "Additional arguments",
+            optional: true,
+            type: String),
+          FastlaneCore::ConfigItem.new(
+            key: :build_number_value,
+            description: "Specific build number value",
             optional: true,
             type: String),
           FastlaneCore::ConfigItem.new(
