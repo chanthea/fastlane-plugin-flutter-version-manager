@@ -125,7 +125,7 @@ module Fastlane
       end
   
       def get_current_version_code
-        "(#{@version_reader.field('code')})"
+        "#{@version_reader.field('code')}"
       end
   
       def bump_major
