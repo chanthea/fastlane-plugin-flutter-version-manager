@@ -27,6 +27,8 @@ module Fastlane
           true
         when "-build"
           true
+        when "-set"
+          true  
         else
           false
         end
@@ -50,6 +52,7 @@ module Fastlane
         -patch: Bumps patch version
         -apply: Applies version specified from version.yml to pubspec
         -build: read build number
+        -set: set specific version
         "
       end
     end
@@ -171,6 +174,15 @@ module Fastlane
         UI.message("Previous app version: #{previousVersion}")
         UI.message("New app version: #{newVersion}")
       end
+
+      def set_pubspec(version_name, version_code)
+        previousVersion = @pubspec_yaml_reader.field('version')
+        newVersion = "#{version_name}+#{version_code}"
+        newContent = @pubspec_file_reader.read.map { |s| s.gsub(previousVersion, newVersion) }
+        @pubspec_file_writter.write(newContent)
+        UI.message("Previous app version: #{previousVersion}")
+        UI.message("New app version: #{newVersion}")
+      end
     end
   
     ARGUMENT_MANAGER = ArgumentManager.new()
@@ -182,12 +194,14 @@ module Fastlane
         git_path = params[:git_repo] || './'
         args = (params[:arguments] || "").split(" ")
         build_number_value = params[:build_number_value] || nil
+        version_name = params[:version_name] || nil
+        version_code = params[:version_code] || nil
 
         # Paths valid, continue
         versionManager = VersionManager.new(version_path, pubspec_path, git_path)
 
         # Check if the user has passed additional arguments
-        if(args.include?("-h") || args.include?("-version") || args.include?("-code") || args.include?("-major") || args.include?("-minor") || args.include?("-patch") || args.include?("-apply") || args.include?("-build"))
+        if(args.include?("-h") || args.include?("-version") || args.include?("-code") || args.include?("-major") || args.include?("-minor") || args.include?("-patch") || args.include?("-apply") || args.include?("-build") || args.include?("-set"))
           args.each { |a|
             case a
             when '-h'
@@ -198,6 +212,8 @@ module Fastlane
               UI.message(versionManager.get_current_version_code)
             when "-code"
               versionManager.bump_code(build_number_value)
+            when "-set"
+              versionManager.set_pubspec(version_name, version_code)  
             when "-major"
               versionManager.bump_major
             when "-minor"
@@ -241,6 +257,16 @@ module Fastlane
             description: "Specific build number value",
             optional: true,
             type: String),
+          FastlaneCore::ConfigItem.new(
+              key: :version_name,
+              description: "Specific version name value",
+              optional: true,
+              type: String),
+          FastlaneCore::ConfigItem.new(
+                key: :version_code,
+                description: "Specific version code value",
+                optional: true,
+                type: String),      
           FastlaneCore::ConfigItem.new(
             key: :yml,
             description: "Path to version.yml",
